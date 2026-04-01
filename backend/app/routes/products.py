@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional, List
 from app.database import get_db
-from app.models import Product, Source, PriceHistory, User
+from app.models import Product, Source, PriceHistory
 from app.schemas import (
     ProductCreate,
     ProductResponse,
@@ -20,23 +20,10 @@ from datetime import datetime
 router = APIRouter(prefix="/api/products", tags=["products"])
 
 
-def get_current_user(db: Session = Depends(get_db)) -> User:
-    """Get current user - simplified for demo"""
-    # In production, extract from JWT token
-    user = db.query(User).filter(User.is_active == True).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
-        )
-    return user
-
-
 @router.post("/", response_model=ProductResponse)
 def create_product(
     product_data: ProductCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Create a new product"""
     # Check for duplicate
@@ -53,7 +40,6 @@ def create_product(
 
     db_product = Product(
         **product_data.dict(),
-        created_by_id=current_user.id,
         last_fetched=datetime.utcnow()
     )
     db.add(db_product)
@@ -80,8 +66,7 @@ def list_products(
     category: Optional[str] = None,
     min_price: Optional[float] = Query(None, ge=0),
     max_price: Optional[float] = Query(None, ge=0),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """List products with filtering and pagination"""
     query = db.query(Product)
@@ -120,8 +105,7 @@ def list_products(
 @router.get("/{product_id}", response_model=ProductDetail)
 def get_product(
     product_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Get detailed product information with price history"""
     product = db.query(Product).filter(Product.id == product_id).first()
@@ -145,8 +129,7 @@ def get_product(
 def update_product(
     product_id: int,
     update_data: dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Update product information"""
     product = db.query(Product).filter(Product.id == product_id).first()
@@ -189,8 +172,7 @@ def update_product(
 @router.delete("/{product_id}")
 def delete_product(
     product_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Delete a product"""
     product = db.query(Product).filter(Product.id == product_id).first()
@@ -210,8 +192,7 @@ def delete_product(
 @router.post("/{product_id}/refresh")
 def refresh_product(
     product_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Trigger a price refresh for a product (simulate API call)"""
     product = db.query(Product).filter(Product.id == product_id).first()
@@ -234,8 +215,7 @@ def refresh_product(
 
 @router.get("/analytics/overview")
 def get_analytics(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Get aggregate analytics"""
     total_products = db.query(func.count(Product.id)).scalar() or 0

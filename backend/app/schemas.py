@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
@@ -8,26 +8,6 @@ class SourceEnum(str, Enum):
     GRAILED = "grailed"
     FASHIONPHILE = "fashionphile"
     ONESD_IBS = "1stdibs"
-
-
-# User Schemas
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str = Field(..., min_length=8)
-
-
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class UserResponse(BaseModel):
-    id: int
-    email: str
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # Product Schemas
@@ -117,12 +97,6 @@ class AggregateStats(BaseModel):
     products_by_source: dict
     avg_price_by_category: dict
     total_price_changes_today: int
-
-
-# API Response
-class Token(BaseModel):
-    access_token: str
-    token_type: str
 
 
 class PaginatedResponse(BaseModel):

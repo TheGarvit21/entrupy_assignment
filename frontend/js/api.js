@@ -4,11 +4,9 @@
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
-let authToken = localStorage.getItem('authToken');
-
 class API {
     /**
-     * Make authenticated API request
+     * Make API request
      */
     static async request(endpoint, options = {}) {
         const url = `${API_BASE_URL}${endpoint}`;
@@ -16,10 +14,6 @@ class API {
             'Content-Type': 'application/json',
             ...options.headers
         };
-
-        if (authToken) {
-            headers['Authorization'] = `Bearer ${authToken}`;
-        }
 
         const config = {
             ...options,
@@ -39,31 +33,6 @@ class API {
             console.error(`API Error: ${endpoint}`, error);
             throw error;
         }
-    }
-
-    /**
-     * Authentication endpoints
-     */
-    static async register(email, password) {
-        return this.request('/auth/register', {
-            method: 'POST',
-            body: JSON.stringify({ email, password })
-        });
-    }
-
-    static async login(email, password) {
-        const response = await this.request('/auth/login', {
-            method: 'POST',
-            body: JSON.stringify({ email, password })
-        });
-        authToken = response.access_token;
-        localStorage.setItem('authToken', authToken);
-        return response;
-    }
-
-    static logout() {
-        authToken = null;
-        localStorage.removeItem('authToken');
     }
 
     /**
@@ -115,13 +84,6 @@ class API {
         return this.request('/products/analytics/overview', {
             method: 'GET'
         });
-    }
-
-    /**
-     * Check if user is authenticated
-     */
-    static isAuthenticated() {
-        return !!authToken;
     }
 }
 

@@ -13,21 +13,6 @@ class Source(str, enum.Enum):
     ONESD_IBS = "1stdibs"
 
 
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    api_key = Column(String, unique=True, index=True)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    products = relationship("Product", back_populates="created_by")
-    price_alerts = relationship("PriceAlert", back_populates="user")
-    request_logs = relationship("RequestLog", back_populates="user")
-
-
 class Product(Base):
     __tablename__ = "products"
     __table_args__ = (
@@ -37,7 +22,7 @@ class Product(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    external_id = Column(String, nullable=False)  # ID from marketplace
+    external_id = Column(String, nullable=False)
     source = Column(SQLEnum(Source), nullable=False)
     name = Column(String, nullable=False)
     url = Column(String)
@@ -48,9 +33,6 @@ class Product(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_fetched = Column(DateTime)
-
-    created_by_id = Column(Integer, ForeignKey("users.id"))
-    created_by = relationship("User", back_populates="products")
 
     price_history = relationship("PriceHistory", back_populates="product", cascade="all, delete-orphan")
     price_alerts = relationship("PriceAlert", back_populates="product", cascade="all, delete-orphan")
@@ -75,18 +57,16 @@ class PriceHistory(Base):
 class PriceAlert(Base):
     __tablename__ = "price_alerts"
     __table_args__ = (
-        Index("idx_user_product", "user_id", "product_id"),
+        Index("idx_product", "product_id"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
     threshold_price = Column(Float)
-    alert_type = Column(String)  # "price_drop", "price_increase", "any_change"
+    alert_type = Column(String)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User", back_populates="price_alerts")
     product = relationship("Product", back_populates="price_alerts")
 
 
@@ -109,14 +89,11 @@ class PriceChangeEvent(Base):
 class RequestLog(Base):
     __tablename__ = "request_logs"
     __table_args__ = (
-        Index("idx_user_timestamp", "user_id", "requested_at"),
+        Index("idx_timestamp", "requested_at"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     endpoint = Column(String)
     method = Column(String)
     status_code = Column(Integer)
     requested_at = Column(DateTime, default=datetime.utcnow, index=True)
-
-    user = relationship("User", back_populates="request_logs")

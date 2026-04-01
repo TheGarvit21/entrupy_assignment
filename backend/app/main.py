@@ -12,8 +12,8 @@ import json
 from dotenv import load_dotenv
 
 from app.database import get_db, init_db
-from app.models import User, RequestLog
-from app.routes import auth, products
+from app.models import RequestLog
+from app.routes import products
 
 # Load environment variables
 load_dotenv()
@@ -64,7 +64,6 @@ async def log_requests(request: Request, call_next):
 
 
 # Include routers
-app.include_router(auth.router)
 app.include_router(products.router)
 
 

@@ -18,11 +18,8 @@ class App {
      */
     init() {
         this.setupEventListeners();
-        this.updateAuthUI();
-        if (API.isAuthenticated()) {
-            this.loadProducts();
-            this.loadAnalytics();
-        }
+        this.loadProducts();
+        this.loadAnalytics();
     }
 
     /**
@@ -38,40 +35,6 @@ class App {
                 e.target.closest('.modal').classList.remove('show');
             }
         });
-
-        // Login/Register
-        document.addEventListener('click', (e) => {
-            if (e.target.id === 'loginBtn') {
-                e.preventDefault();
-                UI.showModal('loginModal');
-            }
-        });
-
-        // Logout
-        document.addEventListener('click', (e) => {
-            if (e.target.id === 'logoutBtn') {
-                API.logout();
-                this.updateAuthUI();
-                UI.toast('Logged out successfully', 'success');
-            }
-        });
-
-        // Auth form
-        const authForm = document.getElementById('authForm');
-        if (authForm) {
-            authForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-                const action = e.submitter.value;
-
-                if (action === 'login') {
-                    this.login(email, password);
-                } else {
-                    this.register(email, password);
-                }
-            });
-        }
 
         // Product form
         const addProductForm = document.getElementById('addProductForm');
@@ -104,57 +67,10 @@ class App {
     }
 
     /**
-     * Update authentication UI
-     */
-    updateAuthUI() {
-        UI.updateAuthUI(API.isAuthenticated());
-    }
-
-    /**
-     * Login user
-     */
-    async login(email, password) {
-        try {
-            UI.showLoading();
-            await API.login(email, password);
-            UI.hideModal('loginModal');
-            document.getElementById('authForm').reset();
-            this.updateAuthUI();
-            this.loadProducts();
-            this.loadAnalytics();
-            UI.toast('Login successful', 'success');
-        } catch (error) {
-            UI.toast('Login failed: ' + error.message, 'error');
-        } finally {
-            UI.hideLoading();
-        }
-    }
-
-    /**
-     * Register user
-     */
-    async register(email, password) {
-        try {
-            UI.showLoading();
-            await API.register(email, password);
-            UI.toast('Registration successful! Please login.', 'success');
-            document.getElementById('authForm').reset();
-            // Auto-login
-            await this.login(email, password);
-        } catch (error) {
-            UI.toast('Registration failed: ' + error.message, 'error');
-        } finally {
-            UI.hideLoading();
-        }
-    }
-
-    /**
      * Load products with pagination
      */
     async loadProducts() {
         try {
-            if (!API.isAuthenticated()) return;
-
             UI.showLoading();
             const params = {
                 skip: this.filters.skip,
@@ -188,11 +104,6 @@ class App {
      */
     async addProduct() {
         try {
-            if (!API.isAuthenticated()) {
-                UI.toast('Please login first', 'error');
-                return;
-            }
-
             const productData = {
                 external_id: document.getElementById('productId').value,
                 source: document.getElementById('productSource').value,
@@ -265,8 +176,6 @@ class App {
      */
     async loadAnalytics() {
         try {
-            if (!API.isAuthenticated()) return;
-
             UI.showLoading();
             const stats = await API.getAnalytics();
 

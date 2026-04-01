@@ -58,16 +58,6 @@ class UI {
     }
 
     /**
-     * Update authentication UI
-     */
-    static updateAuthUI(isAuthenticated) {
-        const userSection = document.querySelector('.user-section');
-        userSection.innerHTML = isAuthenticated
-            ? '<button id="logoutBtn" class="btn btn-secondary">Logout</button>'
-            : '<a href="#" id="loginBtn" class="btn btn-primary">Login</a>';
-    }
-
-    /**
      * Render products table
      */
     static renderProducts(products) {
