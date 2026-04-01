@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Price Monitoring System</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">💰 Price Monitor</div>
+            <ul class="nav-menu">
+                <li><a href="#dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="#products" class="nav-link">Products</a></li>
+                <li><a href="#analytics" class="nav-link">Analytics</a></li>
+            </ul>
+            <div id="userSection" class="user-section">
+                <a href="#" id="loginBtn" class="btn btn-primary">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Login / Register</h2>
+            <form id="authForm">
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Password (min 8 chars)" required>
+                <div class="form-buttons">
+                    <button type="submit" name="action" value="login" class="btn btn-primary">Login</button>
+                    <button type="submit" name="action" value="register" class="btn btn-secondary">Register</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <main class="container">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section">
+            <h1>Dashboard</h1>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalProducts">0</div>
+                    <div class="stat-label">Total Products</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalSources">0</div>
+                    <div class="stat-label">Data Sources</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="priceChanges">0</div>
+                    <div class="stat-label">Price Changes Today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgPrice">$0</div>
+                    <div class="stat-label">Avg Price</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h2>Products by Source</h2>
+                <div id="sourceChart" class="bar-chart"></div>
+            </div>
+
+            <div class="chart-container">
+                <h2>Average Price by Category</h2>
+                <div id="categoryChart" class="chart"></div>
+            </div>
+
+            <button id="refreshDataBtn" class="btn btn-primary action-btn">Refresh All Data</button>
+        </section>
+
+        <!-- Products Section -->
+        <section id="products" class="section">
+            <h1>Products</h1>
+
+            <!-- Filters -->
+            <div class="filter-panel">
+                <input type="text" id="searchInput" placeholder="Search products..." class="filter-input">
+
+                <select id="sourceFilter" class="filter-input">
+                    <option value="">All Sources</option>
+                    <option value="grailed">Grailed</option>
+                    <option value="fashionphile">Fashionphile</option>
+                    <option value="1stdibs">1stDibs</option>
+                </select>
+
+                <select id="categoryFilter" class="filter-input">
+                    <option value="">All Categories</option>
+                </select>
+
+                <div class="price-filter">
+                    <input type="number" id="minPrice" placeholder="Min Price" class="filter-input" min="0">
+                    <input type="number" id="maxPrice" placeholder="Max Price" class="filter-input" min="0">
+                </div>
+
+                <button id="filterBtn" class="btn btn-primary">Apply Filters</button>
+                <button id="resetBtn" class="btn btn-secondary">Reset</button>
+            </div>
+
+            <!-- Add Product Form -->
+            <div class="add-product-panel">
+                <h3>Add New Product</h3>
+                <form id="addProductForm">
+                    <input type="text" id="productName" placeholder="Product Name" required>
+                    <input type="text" id="productId" placeholder="External ID" required>
+
+                    <select id="productSource" required>
+                        <option value="">Select Source</option>
+                        <option value="grailed">Grailed</option>
+                        <option value="fashionphile">Fashionphile</option>
+                        <option value="1stdibs">1stDibs</option>
+                    </select>
+
+                    <input type="text" id="productCategory" placeholder="Category">
+                    <input type="number" id="productPrice" placeholder="Price" step="0.01" required>
+                    <input type="url" id="productUrl" placeholder="Product URL">
+                    <textarea id="productDescription" placeholder="Description" rows="3"></textarea>
+
+                    <button type="submit" class="btn btn-primary">Add Product</button>
+                </form>
+            </div>
+
+            <!-- Products Table -->
+            <div class="products-container">
+                <table class="products-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Source</th>
+                            <th>Category</th>
+                            <th>Current Price</th>
+                            <th>Last Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsList">
+                        <tr><td colspan="6" class="text-center">No products yet</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination" id="pagination">
+                <button id="prevBtn" class="btn btn-secondary" disabled>← Previous</button>
+                <span id="pageInfo">Page 1</span>
+                <button id="nextBtn" class="btn btn-secondary">Next →</button>
+            </div>
+        </section>
+
+        <!-- Analytics Section -->
+        <section id="analytics" class="section">
+            <h1>Analytics</h1>
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <h3>Price Statistics by Source</h3>
+                    <div id="sourceStats"></div>
+                </div>
+                <div class="analytics-card">
+                    <h3>Price Statistics by Category</h3>
+                    <div id="categoryStats"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Product Detail Modal -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content large">
+            <span class="close">&times;</span>
+            <h2 id="detailTitle"></h2>
+            <div id="detailContent"></div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="spinner hidden">
+        <div class="spinner-ring"></div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
