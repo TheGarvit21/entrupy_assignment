@@ -59,7 +59,7 @@ class Product(Base):
 class PriceHistory(Base):
     __tablename__ = "price_history"
     __table_args__ = (
-        Index("idx_product_timestamp", "product_id", "recorded_at"),
+        Index("idx_price_product_ts", "product_id", "recorded_at"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
@@ -90,7 +90,7 @@ class PriceAlert(Base):
 class PriceChangeEvent(Base):
     __tablename__ = "price_change_events"
     __table_args__ = (
-        Index("idx_product_timestamp", "product_id", "detected_at"),
+        Index("idx_change_product_ts", "product_id", "detected_at"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
