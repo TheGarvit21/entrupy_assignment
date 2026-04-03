@@ -1,0 +1,62 @@
+{
+  "grailed": [
+    {
+      "external_id": "G1",
+      "name": "Vintage Burberry Trench Coat",
+      "current_price": 450.0,
+      "currency": "USD",
+      "category": "Outerwear",
+      "url": "https://www.grailed.com/listings/1",
+      "description": "Authentic vintage Burberry trench coat in excellent condition."
+    },
+    {
+      "external_id": "G2",
+      "name": "Off-White Industrial Belt",
+      "current_price": 120.0,
+      "currency": "USD",
+      "category": "Accessories",
+      "url": "https://www.grailed.com/listings/2",
+      "description": "Classic Off-White industrial belt, yellow."
+    }
+  ],
+  "fashionphile": [
+    {
+      "external_id": "F1",
+      "name": "Chanel Lambskin Quilted Flap Bag",
+      "current_price": 5200.0,
+      "currency": "USD",
+      "category": "Bags",
+      "url": "https://www.fashionphile.com/p/1",
+      "description": "Black quilted lambskin Chanel flap bag with gold hardware."
+    },
+    {
+      "external_id": "F2",
+      "name": "Louis Vuitton Neverfull MM",
+      "current_price": 1850.0,
+      "currency": "USD",
+      "category": "Bags",
+      "url": "https://www.fashionphile.com/p/2",
+      "description": "Monogram canvas Louis Vuitton Neverfull MM."
+    }
+  ],
+  "1stdibs": [
+    {
+      "external_id": "D1",
+      "name": "Rolex Submariner 16610",
+      "current_price": 12500.0,
+      "currency": "USD",
+      "category": "Watches",
+      "url": "https://www.1stdibs.com/jewelry/watches/1",
+      "description": "Classic Rolex Submariner Date, stainless steel."
+    },
+    {
+      "external_id": "D2",
+      "name": "Hermès Birkin 35 Togo",
+      "current_price": 15000.0,
+      "currency": "USD",
+      "category": "Bags",
+      "url": "https://www.1stdibs.com/fashion/handbags-purses/2",
+      "description": "Hermès Birkin 35 in Togo leather, Gold color."
+    }
+  ]
+}

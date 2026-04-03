@@ -1,285 +1,282 @@
 /**
- * UI Module - Handle UI updates and interactions
+ * UI Module - UltraThink Design Implementation
  */
 
 class UI {
-    /**
-     * Show loading spinner
-     */
     static showLoading() {
         document.getElementById('loadingSpinner').classList.add('show');
     }
 
-    /**
-     * Hide loading spinner
-     */
     static hideLoading() {
         document.getElementById('loadingSpinner').classList.remove('show');
     }
 
-    /**
-     * Show modal
-     */
-    static showModal(modalId) {
-        document.getElementById(modalId).classList.add('show');
+    static showModal(id) {
+        document.getElementById(id).classList.add('show');
     }
 
-    /**
-     * Hide modal
-     */
-    static hideModal(modalId) {
-        document.getElementById(modalId).classList.remove('show');
+    static hideModal(id) {
+        document.getElementById(id).classList.remove('show');
     }
 
-    /**
-     * Show toast notification
-     */
-    static toast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 1.5rem;
-            background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#2563eb'};
-            color: white;
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            z-index: 3000;
-            animation: slideIn 0.3s;
-        `;
-        toast.textContent = message;
-        document.body.appendChild(toast);
-
+    static toast(msg, type = 'info') {
+        const t = document.createElement('div');
+        t.className = `toast toast-${type}`;
+        t.textContent = msg;
+        document.body.appendChild(t);
         setTimeout(() => {
-            toast.style.animation = 'fadeIn 0.3s reverse';
-            setTimeout(() => toast.remove(), 300);
+            t.style.opacity = '0';
+            t.style.transform = 'translateY(10px)';
+            setTimeout(() => t.remove(), 300);
         }, 3000);
     }
 
     /**
-     * Render products table
+     * Typewriter effect for Hero heading
      */
+    static initTypewriter() {
+        const text = "Benchmark Prices \nWith Absolute Clarity.";
+        const target = document.getElementById('typewriterHeading');
+        if (!target) return;
+        
+        target.innerHTML = '';
+        let i = 0;
+        
+        function type() {
+            if (i < text.length) {
+                const char = text.charAt(i);
+                if (char === '\n') {
+                    target.innerHTML += '<br>';
+                } else if (char === 'C' && text.substring(i, i+7) === 'Clarity') {
+                    target.innerHTML += `<span>Clarity</span>`;
+                    i += 7;
+                } else {
+                    target.innerHTML += char;
+                }
+                i++;
+                setTimeout(type, 50);
+            }
+        }
+        type();
+    }
+
+    static updateAuthUI(user) {
+        const nav = document.getElementById('mainNavbar');
+        const content = document.getElementById('mainAppContent');
+        const hero = document.getElementById('landingHero');
+        const email = document.getElementById('userEmail');
+
+        if (user) {
+            hero.classList.add('hidden');
+            hero.classList.remove('active-section');
+            nav.classList.remove('hidden');
+            content.classList.remove('hidden');
+            email.textContent = user.email;
+        } else {
+            hero.classList.remove('hidden');
+            hero.classList.add('active-section');
+            nav.classList.add('hidden');
+            content.classList.add('hidden');
+            email.textContent = '';
+            UI.initTypewriter(); // Typewriter only on landing
+        }
+    }
+
     static renderProducts(products) {
         const tbody = document.getElementById('productsList');
-
         if (!products || products.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No products found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center empty-state">No listings synced.</td></tr>';
             return;
         }
 
-        tbody.innerHTML = products.map(product => `
+        tbody.innerHTML = products.map(p => `
             <tr>
                 <td>
-                    <strong style="cursor:pointer; color:#2563eb;" onclick="UI.showProductDetail(${product.id})">
-                        ${product.name || 'N/A'}
-                    </strong>
+                    <div class="product-name-link" onclick="UI.showProductDetail(${p.id})">
+                        ${p.name || 'Untitled Listing'}
+                    </div>
                 </td>
-                <td><span style="background:#e0e7ff; padding:0.25rem 0.75rem; border-radius:4px; font-size:0.85rem;">${product.source}</span></td>
-                <td>${product.category || '-'}</td>
-                <td><strong>$${(product.current_price || 0).toFixed(2)}</strong></td>
-                <td>${new Date(product.updated_at).toLocaleDateString()}</td>
-                <td>
-                    <button onclick="UI.editProduct(${product.id})" class="btn btn-primary" style="margin-right:0.5rem;">Edit</button>
-                    <button onclick="UI.deleteProductConfirm(${product.id})" class="btn btn-secondary">Delete</button>
+                <td><span class="badge source-badge">${p.source}</span></td>
+                <td><span style="color: var(--text-mid); font-size: 0.8rem;">${p.category || 'Unsegmented'}</span></td>
+                <td><strong style="color: var(--primary); font-weight: 800;">$${(p.current_price || 0).toLocaleString()}</strong></td>
+                <td><span style="color: var(--text-low); font-size: 0.8rem;">${new Date(p.updated_at).toLocaleDateString()}</span></td>
+                <td class="text-right">
+                    <div class="btn-group">
+                        <button onclick="UI.refreshProductSync(${p.id})" class="btn btn-sm btn-outline">Sync</button>
+                        <button onclick="UI.deleteProductConfirm(${p.id})" class="btn btn-sm btn-outline" style="border-color: rgba(239, 68, 68, 0.2); color: #ef4444;">Drop</button>
+                    </div>
                 </td>
             </tr>
         `).join('');
     }
 
-    /**
-     * Show product detail modal
-     */
-    static async showProductDetail(productId) {
+    static async refreshProductSync(id) {
         try {
             UI.showLoading();
-            const product = await API.getProduct(productId);
+            await API.refreshProduct(id);
+            UI.toast('Sync successful.', 'success');
+            window.app.loadProducts();
+            window.app.loadAnalytics();
+        } catch (e) {
+            UI.toast('Sync failure: ' + e.message, 'error');
+        } finally {
+            UI.hideLoading();
+        }
+    }
 
-            const priceHistoryHtml = (product.price_history || [])
+    static async showProductDetail(id) {
+        try {
+            UI.showLoading();
+            const p = await API.getProduct(id);
+
+            const historyHtml = (p.price_history || [])
                 .sort((a, b) => new Date(b.recorded_at) - new Date(a.recorded_at))
-                .slice(0, 10)
+                .slice(0, 8)
                 .map((ph, idx) => {
-                    const prevPrice = product.price_history[idx + 1]?.price;
-                    const change = prevPrice ? ((ph.price - prevPrice) / prevPrice * 100).toFixed(2) : 0;
-                    const changeClass = change > 0 ? 'price-up' : 'price-down';
-
+                    const next = p.price_history[idx + 1];
+                    let diffHtml = '<span style="color: var(--text-low);">-</span>';
+                    if (next) {
+                        const d = ((ph.price - next.price) / next.price * 100).toFixed(1);
+                        const c = d > 0 ? '#ef4444' : (d < 0 ? '#10b981' : 'inherit');
+                        diffHtml = `<span style="color: ${c}; font-weight: 800;">${d > 0 ? '↑' : '↓'} ${Math.abs(d)}%</span>`;
+                    }
                     return `
                         <tr>
                             <td>${new Date(ph.recorded_at).toLocaleString()}</td>
-                            <td>$${ph.price.toFixed(2)}</td>
-                            <td class="${changeClass}">${change > 0 ? '+' : ''}${change}%</td>
+                            <td>$${ph.price.toLocaleString()}</td>
+                            <td>${diffHtml}</td>
                         </tr>
                     `;
                 }).join('');
 
-            document.getElementById('detailTitle').textContent = product.name;
+            document.getElementById('detailTitle').textContent = p.name;
             document.getElementById('detailContent').innerHTML = `
-                <div>
-                    <p><strong>Source:</strong> ${product.source}</p>
-                    <p><strong>Category:</strong> ${product.category || 'N/A'}</p>
-                    <p><strong>Current Price:</strong> <strong style="font-size:1.5rem;color:#2563eb;">$${product.current_price.toFixed(2)}</strong></p>
-                    <p><strong>URL:</strong> <a href="${product.url}" target="_blank">${product.url || 'N/A'}</a></p>
-                    <p><strong>Description:</strong> ${product.description || 'N/A'}</p>
-                    <p><strong>Last Updated:</strong> ${new Date(product.updated_at).toLocaleString()}</p>
+                <div class="product-info-grid">
+                    <div class="info-item">
+                        <label>Current Valuation</label>
+                        <span class="price-large">$${p.current_price.toLocaleString()}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Asset Origin</label>
+                        <span style="color: white; font-weight: 700;">${p.source}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Category Segment</label>
+                        <span style="color: white;">${p.category || 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Internal ID</label>
+                        <span style="color: var(--text-low); font-size: 0.8rem;">${p.external_id}</span>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 2.5rem; padding: 1.5rem; background: #080808; border-radius: 12px; border: 1px solid #111;">
+                    <label style="display: block; font-size: 0.7rem; font-weight: 800; color: var(--text-low); text-transform: uppercase; margin-bottom: 0.5rem;">Asset Description</label>
+                    <p style="color: var(--text-mid); font-size: 0.95rem;">${p.description || 'No strategic description available.'}</p>
                 </div>
 
-                ${priceHistoryHtml ? `
-                    <div class="price-history">
-                        <h3>Price History (Last 10 entries)</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Price</th>
-                                    <th>Change %</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${priceHistoryHtml}
-                            </tbody>
-                        </table>
-                    </div>
-                ` : ''}
+                <div class="price-history">
+                    <h3 style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-low); margin-bottom: 1.5rem;">Fluctuation History</h3>
+                    <table style="width: 100%;">
+                        <thead>
+                            <tr><th>Timestamp</th><th>Valuation</th><th>Delta</th></tr>
+                        </thead>
+                        <tbody>${historyHtml}</tbody>
+                    </table>
+                </div>
             `;
-
             UI.showModal('detailModal');
-        } catch (error) {
-            UI.toast('Failed to load product details: ' + error.message, 'error');
+        } catch (e) {
+            UI.toast('Detail pull error: ' + e.message, 'error');
         } finally {
             UI.hideLoading();
         }
     }
 
-    /**
-     * Delete product with confirmation
-     */
-    static async deleteProductConfirm(productId) {
-        if (!confirm('Are you sure you want to delete this product?')) return;
-
+    static async deleteProductConfirm(id) {
+        if (!confirm('Drop this asset from intelligence monitoring?')) return;
         try {
             UI.showLoading();
-            await API.deleteProduct(productId);
-            UI.toast('Product deleted successfully', 'success');
-            // Reload products
+            await API.deleteProduct(id);
+            UI.toast('Asset dropped.', 'info');
             window.app?.loadProducts();
-        } catch (error) {
-            UI.toast('Failed to delete: ' + error.message, 'error');
+            window.app?.loadAnalytics();
+        } catch (e) {
+            UI.toast('Drop failed', 'error');
         } finally {
             UI.hideLoading();
         }
     }
 
-    /**
-     * Edit product placeholder
-     */
-    static editProduct(productId) {
-        UI.toast('Edit functionality coming soon', 'info');
+    static updateStats(s) {
+        document.getElementById('totalProducts').textContent = s.total_products || 0;
+        document.getElementById('totalSources').textContent = Object.keys(s.products_by_source || {}).length;
+        document.getElementById('priceChanges').textContent = s.total_price_changes_today || 0;
+        
+        const categories = Object.values(s.avg_price_by_category || {});
+        const avg = categories.length ? categories.reduce((sum, c) => sum + c.average, 0) / categories.length : 0;
+        document.getElementById('avgPrice').textContent = `$${Math.round(avg).toLocaleString()}`;
     }
 
-    /**
-     * Update dashboard statistics
-     */
-    static updateStats(stats) {
-        document.getElementById('totalProducts').textContent = stats.total_products || 0;
-
-        const sourceCount = Object.keys(stats.products_by_source || {}).length;
-        document.getElementById('totalSources').textContent = sourceCount;
-
-        document.getElementById('priceChanges').textContent = stats.total_price_changes_today || 0;
-
-        const avgPrice = Object.values(stats.avg_price_by_category || {})
-            .reduce((sum, cat) => sum + (cat.average || 0), 0) /
-            (Object.keys(stats.avg_price_by_category || {}).length || 1);
-        document.getElementById('avgPrice').textContent = `$${avgPrice.toFixed(2)}`;
-    }
-
-    /**
-     * Render source statistics chart
-     */
-    static renderSourceChart(stats) {
-        const container = document.getElementById('sourceChart');
-        const sources = stats.products_by_source || {};
-
-        const maxCount = Math.max(...Object.values(sources), 1);
-
-        container.innerHTML = Object.entries(sources).map(([source, count]) => {
-            const height = (count / maxCount) * 100;
-            return `
-                <div style="
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    flex: 1;
-                ">
-                    <div class="bar" style="height: ${Math.max(height, 20)}%;">
-                        <div class="bar-value">${count}</div>
-                    </div>
-                    <div class="bar-label">${source}</div>
+    static renderSourceChart(s) {
+        const c = document.getElementById('sourceChart');
+        const sources = s.products_by_source || {};
+        const max = Math.max(...Object.values(sources), 1);
+        c.innerHTML = Object.entries(sources).map(([name, val]) => `
+            <div class="chart-bar-container">
+                <div class="bar" style="height: ${Math.max((val / max) * 100, 5)}%;">
+                    <span class="bar-value">${val}</span>
                 </div>
-            `;
-        }).join('');
+                <span class="bar-label">${name}</span>
+            </div>
+        `).join('');
     }
 
-    /**
-     * Render category statistics
-     */
-    static renderCategoryStats(stats) {
-        const container = document.getElementById('categoryChart');
-        const categories = stats.avg_price_by_category || {};
-
-        if (Object.keys(categories).length === 0) {
-            container.innerHTML = '<p style="text-align:center;color:#64748b;">No category data available</p>';
-            return;
-        }
-
-        const maxPrice = Math.max(...Object.values(categories).map(c => c.average), 1);
-
-        container.innerHTML = Object.entries(categories).map(([category, data]) => {
-            const height = (data.average / maxPrice) * 100;
-            return `
-                <div style="
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    flex: 1;
-                    font-size: 0.85rem;
-                ">
-                    <div class="bar" style="height: ${Math.max(height, 20)}%;">
-                        <div class="bar-value">$${data.average.toFixed(0)}</div>
-                    </div>
-                    <div class="bar-label">${category || 'Other'}</div>
+    static renderCategoryStats(s) {
+        const c = document.getElementById('categoryChart');
+        const cats = s.avg_price_by_category || {};
+        const max = Math.max(...Object.values(cats).map(x => x.average), 1);
+        c.innerHTML = Object.entries(cats).map(([name, data]) => `
+            <div class="chart-bar-container">
+                <div class="bar secondary" style="height: ${Math.max((data.average / max) * 100, 5)}%;">
+                    <span class="bar-value">$${Math.round(data.average / 1000)}k</span>
                 </div>
-            `;
-        }).join('');
+                <span class="bar-label">${name || 'Other'}</span>
+            </div>
+        `).join('');
     }
 
-    /**
-     * Update pagination
-     */
-    static updatePagination(total, page, pageSize) {
-        const totalPages = Math.ceil(total / pageSize);
-        document.getElementById('pageInfo').textContent = `Page ${page + 1} of ${totalPages}`;
+    static renderAnalyticsText(s) {
+        const srcContainer = document.getElementById('sourceStats');
+        const catContainer = document.getElementById('categoryStats');
+        
+        srcContainer.innerHTML = Object.entries(s.products_by_source || {}).map(([name, count]) => `
+            <div style="display: flex; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid #111;">
+                <span style="color: var(--text-mid); font-weight: 600;">${name}</span>
+                <span style="color: white; font-weight: 800;">${count} Assets</span>
+            </div>
+        `).join('');
+
+        catContainer.innerHTML = Object.entries(s.avg_price_by_category || {}).map(([name, data]) => `
+            <div style="display: flex; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid #111;">
+                <span style="color: var(--text-mid); font-weight: 600;">${name || 'Other Segments'}</span>
+                <span style="color: var(--primary); font-weight: 800;">$${data.average.toFixed(0)} Avg</span>
+            </div>
+        `).join('');
+    }
+
+    static updatePagination(total, page, size) {
+        const pages = Math.ceil(total / size) || 1;
+        document.getElementById('pageInfo').textContent = `Volume ${page + 1} / ${pages}`;
         document.getElementById('prevBtn').disabled = page === 0;
-        document.getElementById('nextBtn').disabled = page >= totalPages - 1;
+        document.getElementById('nextBtn').disabled = page >= pages - 1;
     }
 
-    /**
-     * Populate category filter from products
-     */
     static updateCategoryFilter(products) {
-        const categories = [...new Set(products
-            .map(p => p.category)
-            .filter(c => c))];
-
-        const select = document.getElementById('categoryFilter');
-        const currentValue = select.value;
-
-        select.innerHTML = '<option value="">All Categories</option>' +
-            categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
-
-        select.value = currentValue;
+        const cats = [...new Set(products.map(p => p.category).filter(c => c))];
+        const s = document.getElementById('categoryFilter');
+        s.innerHTML = '<option value="">All Segments</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
     }
 }
 
-// Make UI globally available
 window.UI = UI;

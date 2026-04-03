@@ -6,6 +6,7 @@ class App {
     constructor() {
         this.currentPage = 0;
         this.pageSize = 20;
+        this.user = null;
         this.filters = {
             skip: 0,
             limit: this.pageSize
@@ -16,47 +17,86 @@ class App {
     /**
      * Initialize application
      */
-    init() {
+    async init() {
         this.setupEventListeners();
-        this.loadProducts();
-        this.loadAnalytics();
+        await this.checkAuth();
+        if (this.user) {
+            this.loadProducts();
+            this.loadAnalytics();
+        }
+    }
+
+    /**
+     * Check if user is logged in
+     */
+    async checkAuth() {
+        try {
+            this.user = await API.getMe();
+            UI.updateAuthUI(this.user);
+        } catch (error) {
+            this.user = null;
+            UI.updateAuthUI(null);
+        }
     }
 
     /**
      * Setup event listeners
      */
     setupEventListeners() {
-        // Modal handlers
+        // Modal Event Handlers
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
-                e.target.classList.remove('show');
+                UI.hideModal(e.target.id);
             }
             if (e.target.classList.contains('close')) {
-                e.target.closest('.modal').classList.remove('show');
+                UI.hideModal(e.target.closest('.modal').id);
             }
         });
 
-        // Product form
-        const addProductForm = document.getElementById('addProductForm');
-        if (addProductForm) {
-            addProductForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.addProduct();
-            });
-        }
+        // Add Product Modal trigger
+        document.getElementById('openAddProductBtn')?.addEventListener('click', () => {
+            UI.showModal('addProductModal');
+        });
 
-        // Filters
+        // Add Product form submission
+        document.getElementById('addProductForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.addProduct();
+        });
+
+        // App Start trigger
+        document.getElementById('startBtn')?.addEventListener('click', () => {
+            UI.showModal('authModal');
+        });
+
+        // Logout
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            this.logout();
+        });
+
+        // Auth Tabs
+        document.getElementById('loginTab')?.addEventListener('click', () => this.switchAuthTab('login'));
+        document.getElementById('registerTab')?.addEventListener('click', () => this.switchAuthTab('register'));
+
+        // Form persistence
+        document.getElementById('loginForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.login();
+        });
+
+        document.getElementById('registerForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.register();
+        });
+
+        // Filter Actions
         document.getElementById('filterBtn')?.addEventListener('click', () => this.applyFilters());
         document.getElementById('resetBtn')?.addEventListener('click', () => this.resetFilters());
-
-        // Pagination
         document.getElementById('prevBtn')?.addEventListener('click', () => this.previousPage());
         document.getElementById('nextBtn')?.addEventListener('click', () => this.nextPage());
-
-        // Refresh data
         document.getElementById('refreshDataBtn')?.addEventListener('click', () => this.refreshAllData());
 
-        // Navigation
+        // Nav Logic
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -67,44 +107,93 @@ class App {
     }
 
     /**
-     * Load products with pagination
+     * Sign-in logic
      */
-    async loadProducts() {
+    async login() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        const err = document.getElementById('authError');
+        
         try {
             UI.showLoading();
-            const params = {
-                skip: this.filters.skip,
-                limit: this.filters.limit,
-                ...Object.fromEntries(
-                    Object.entries({
-                        source: document.getElementById('sourceFilter')?.value,
-                        category: document.getElementById('categoryFilter')?.value,
-                        min_price: document.getElementById('minPrice')?.value,
-                        max_price: document.getElementById('maxPrice')?.value
-                    }).filter(([_, v]) => v)
-                )
-            };
-
-            const response = await API.getProducts(params);
-
-            UI.renderProducts(response.items);
-            UI.updatePagination(response.total, response.page, response.page_size);
-            UI.updateCategoryFilter(response.items);
-
-            this.currentPage = response.page;
-        } catch (error) {
-            UI.toast('Failed to load products: ' + error.message, 'error');
+            await API.login(email, password);
+            this.user = await API.getMe();
+            UI.updateAuthUI(this.user);
+            UI.hideModal('authModal');
+            UI.toast('Access granted. Welcome back.', 'success');
+            this.loadProducts();
+            this.loadAnalytics();
+        } catch (e) {
+            err.textContent = e.message;
+            err.classList.remove('hidden');
         } finally {
             UI.hideLoading();
         }
     }
 
     /**
-     * Add new product
+     * Sign-up logic
+     */
+    async register() {
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        const err = document.getElementById('authError');
+
+        try {
+            UI.showLoading();
+            await API.register(email, password);
+            await API.login(email, password);
+            this.user = await API.getMe();
+            UI.updateAuthUI(this.user);
+            UI.hideModal('authModal');
+            UI.toast('Account verified. Monitoring setup.', 'success');
+            this.loadProducts();
+        } catch (e) {
+            err.textContent = e.message;
+            err.classList.remove('hidden');
+        } finally {
+            UI.hideLoading();
+        }
+    }
+
+    /**
+     * Sign-out logic
+     */
+    async logout() {
+        try {
+            await API.logout();
+            this.user = null;
+            UI.updateAuthUI(null);
+            UI.toast('Session terminated.', 'info');
+        } catch (e) {
+            UI.toast('Sign-out failed', 'error');
+        }
+    }
+
+    /**
+     * Toggle modal view state
+     */
+    switchAuthTab(tab) {
+        const lT = document.getElementById('loginTab');
+        const rT = document.getElementById('registerTab');
+        const lC = document.getElementById('loginFormContainer');
+        const rC = document.getElementById('registerFormContainer');
+        
+        if (tab === 'login') {
+            lT.classList.add('active'); rT.classList.remove('active');
+            lC.classList.remove('hidden'); rC.classList.add('hidden');
+        } else {
+            lT.classList.remove('active'); rT.classList.add('active');
+            lC.classList.add('hidden'); rC.classList.remove('hidden');
+        }
+    }
+
+    /**
+     * Create listing logic
      */
     async addProduct() {
         try {
-            const productData = {
+            const data = {
                 external_id: document.getElementById('productId').value,
                 source: document.getElementById('productSource').value,
                 name: document.getElementById('productName').value,
@@ -115,141 +204,87 @@ class App {
                 currency: 'USD'
             };
 
-            // Validate
-            if (!productData.external_id || !productData.source || !productData.name || !productData.current_price) {
-                UI.toast('Please fill in all required fields', 'error');
-                return;
-            }
-
             UI.showLoading();
-            await API.createProduct(productData);
-
-            UI.toast('Product added successfully', 'success');
+            await API.createProduct(data);
+            UI.toast('Listing successfully registered.', 'success');
+            UI.hideModal('addProductModal');
             document.getElementById('addProductForm').reset();
             this.loadProducts();
-        } catch (error) {
-            UI.toast('Failed to add product: ' + error.message, 'error');
+            this.loadAnalytics();
+        } catch (e) {
+            UI.toast('Registration failed: ' + e.message, 'error');
         } finally {
             UI.hideLoading();
         }
     }
 
-    /**
-     * Apply filters
-     */
-    applyFilters() {
-        this.filters.skip = 0;
-        this.currentPage = 0;
-        this.loadProducts();
+    async loadProducts() {
+        try {
+            const source = document.getElementById('sourceFilter').value;
+            const category = document.getElementById('categoryFilter').value;
+            const minPrice = document.getElementById('minPrice').value;
+            const maxPrice = document.getElementById('maxPrice').value;
+
+            const params = {
+                skip: this.filters.skip,
+                limit: this.pageSize
+            };
+
+            if (source) params.source = source;
+            if (category) params.category = category;
+            if (minPrice) params.min_price = minPrice;
+            if (maxPrice) params.max_price = maxPrice;
+
+            const res = await API.getProducts(params);
+            UI.renderProducts(res.items);
+            UI.updatePagination(res.total, res.page, res.page_size);
+            UI.updateCategoryFilter(res.items);
+        } catch (e) {
+            console.error('Data pull error:', e);
+        }
     }
 
-    /**
-     * Reset filters
-     */
-    resetFilters() {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('sourceFilter').value = '';
-        document.getElementById('categoryFilter').value = '';
-        document.getElementById('minPrice').value = '';
-        document.getElementById('maxPrice').value = '';
-        this.applyFilters();
-    }
-
-    /**
-     * Next page
-     */
-    nextPage() {
-        this.filters.skip += this.pageSize;
-        this.loadProducts();
-    }
-
-    /**
-     * Previous page
-     */
-    previousPage() {
-        this.filters.skip = Math.max(0, this.filters.skip - this.pageSize);
-        this.loadProducts();
-    }
-
-    /**
-     * Load analytics
-     */
     async loadAnalytics() {
         try {
-            UI.showLoading();
             const stats = await API.getAnalytics();
-
             UI.updateStats(stats);
             UI.renderSourceChart(stats);
             UI.renderCategoryStats(stats);
-
-            // Update analytics section
-            document.getElementById('sourceStats').innerHTML = this.renderStatsTable(
-                stats.products_by_source || {}
-            );
-        } catch (error) {
-            console.error('Failed to load analytics:', error);
-        } finally {
-            UI.hideLoading();
+            UI.renderAnalyticsText(stats);
+        } catch (e) {
+            console.error('Analytics pull error:', e);
         }
     }
 
-    /**
-     * Render stats table
-     */
-    renderStatsTable(stats) {
-        return Object.entries(stats).map(([key, value]) => `
-            <div class="stat-row">
-                <span>${this.capitalizeFirstLetter(key)}</span>
-                <span><strong>${typeof value === 'object' ? value.count : value}</strong></span>
-            </div>
-        `).join('');
+    applyFilters() { this.filters.skip = 0; this.loadProducts(); }
+    
+    resetFilters() {
+        document.querySelectorAll('.filter-input').forEach(i => i.value = '');
+        this.applyFilters();
     }
 
-    /**
-     * Refresh all data
-     */
+    nextPage() { this.filters.skip += this.pageSize; this.loadProducts(); }
+    previousPage() { this.filters.skip = Math.max(0, this.filters.skip - this.pageSize); this.loadProducts(); }
+
     async refreshAllData() {
-        try {
-            UI.showLoading();
-            await this.loadProducts();
-            await this.loadAnalytics();
-            UI.toast('Data refreshed successfully', 'success');
-        } catch (error) {
-            UI.toast('Failed to refresh data: ' + error.message, 'error');
-        } finally {
-            UI.hideLoading();
-        }
+        UI.showLoading();
+        await this.loadProducts();
+        await this.loadAnalytics();
+        UI.hideLoading();
+        UI.toast('Data sync complete.', 'success');
     }
 
-    /**
-     * Navigate to section
-     */
     navigateTo(sectionId) {
-        document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
-        const section = document.getElementById(sectionId);
-        if (section) {
-            section.style.display = 'block';
-            section.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Reload data if needed
-        if (sectionId === 'analytics') {
-            this.loadAnalytics();
-        } else if (sectionId === 'products') {
-            this.loadProducts();
-        }
-    }
-
-    /**
-     * Capitalize first letter
-     */
-    capitalizeFirstLetter(str) {
-        return str.charAt(0).toUpperCase() + str.slice(1);
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
+        const target = document.getElementById(sectionId);
+        if (target) target.classList.add('active-section');
+        
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.toggle('active', link.getAttribute('href') === `#${sectionId}`);
+        });
     }
 }
 
-// Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new App();
 });

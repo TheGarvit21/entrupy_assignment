@@ -2,12 +2,75 @@
 Service for handling price change notifications and event management
 """
 from sqlalchemy.orm import Session
-from app.models import PriceChangeEvent, Product, PriceAlert, PriceHistory, Source
+from app.models import PriceChangeEvent, Product, PriceAlert, PriceHistory, Webhook
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 import logging
+import httpx
+import asyncio
 
 logger = logging.getLogger(__name__)
+
+
+class WebhookDeliveryService:
+    """Delivers notifications to configured webhooks"""
+    
+    @staticmethod
+    async def deliver_price_change(db: Session, event_id: int):
+        """Deliver a price change event to all active webhooks"""
+        event = db.query(PriceChangeEvent).filter(PriceChangeEvent.id == event_id).first()
+        if not event:
+            return
+
+        product = db.query(Product).filter(Product.id == event.product_id).first()
+        if not product:
+            return
+
+        # Get all active webhooks
+        webhooks = db.query(Webhook).filter(Webhook.is_active == True).all()
+
+        payload = {
+            "event": "price_change",
+            "timestamp": event.detected_at.isoformat(),
+            "product": {
+                "id": product.id,
+                "name": product.name,
+                "source": product.source.value if hasattr(product.source, "value") else str(product.source),
+                "url": product.url
+            },
+            "price": {
+                "old": event.old_price,
+                "new": event.new_price,
+                "currency": product.currency
+            }
+        }
+
+        async with httpx.AsyncClient() as client:
+            tasks = []
+            for webhook in webhooks:
+                logger.info(f"Delivering price change event to {webhook.target_url}")
+                tasks.append(WebhookDeliveryService._send_webhook(client, webhook.target_url, payload))
+            
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+        event.processed = True
+        db.commit()
+
+    @staticmethod
+    async def _send_webhook(client, url, payload):
+        """Send single webhook with basic retry"""
+        for i in range(3): # 3 tries
+            try:
+                response = await client.post(url, json=payload, timeout=5.0)
+                if response.status_code < 400:
+                    return True
+                logger.warning(f"Webhook delivery failed for {url}: {response.status_code}")
+            except Exception as e:
+                logger.warning(f"Webhook error for {url}: {str(e)}")
+            
+            if i < 2:
+                await asyncio.sleep(1) # wait before retry
+        return False
 
 
 class NotificationService:
@@ -34,69 +97,14 @@ class NotificationService:
             )
             db.add(event)
             db.commit()
+            db.refresh(event)
             logger.info(f"Price change detected for product {product_id}: {old_price} -> {new_price}")
             return event
         return None
 
-    @staticmethod
-    def get_unprocessed_events(db: Session, limit: int = 100) -> List[PriceChangeEvent]:
-        """Get unprocessed price change events"""
-        return db.query(PriceChangeEvent).filter(
-            PriceChangeEvent.processed == False
-        ).limit(limit).all()
-
-    @staticmethod
-    def mark_event_processed(db: Session, event_id: int):
-        """Mark event as processed"""
-        event = db.query(PriceChangeEvent).filter(PriceChangeEvent.id == event_id).first()
-        if event:
-            event.processed = True
-            db.commit()
-
-    @staticmethod
-    def check_alert_triggers(db: Session, product_id: int, new_price: float):
-        """Check which alerts should be triggered for a product price change"""
-        alerts = db.query(PriceAlert).filter(
-            PriceAlert.product_id == product_id,
-            PriceAlert.is_active == True
-        ).all()
-
-        triggered_alerts = []
-        for alert in alerts:
-            should_trigger = False
-
-            if alert.alert_type == "any_change":
-                should_trigger = True
-            elif alert.alert_type == "price_drop" and alert.threshold_price:
-                should_trigger = new_price <= alert.threshold_price
-            elif alert.alert_type == "price_increase" and alert.threshold_price:
-                should_trigger = new_price >= alert.threshold_price
-
-            if should_trigger:
-                triggered_alerts.append(alert)
-
-        return triggered_alerts
-
 
 class PriceHistoryService:
     """Handle price history queries and analytics"""
-
-    @staticmethod
-    def get_price_history(
-        db: Session,
-        product_id: int,
-        limit: int = 100,
-        offset: int = 0
-    ) -> tuple[List[PriceHistory], int]:
-        """Get price history for a product with pagination"""
-        query = db.query(PriceHistory).filter(
-            PriceHistory.product_id == product_id
-        ).order_by(PriceHistory.recorded_at.desc())
-
-        total = query.count()
-        history = query.limit(limit).offset(offset).all()
-
-        return history, total
 
     @staticmethod
     def get_average_price_by_category(db: Session) -> dict:
@@ -111,54 +119,8 @@ class PriceHistoryService:
 
         return {
             row.category: {
-                "average": row.avg_price,
+                "average": round(float(row.avg_price), 2) if row.avg_price else 0,
                 "count": row.count
             }
             for row in results if row.category
-        }
-
-    @staticmethod
-    def get_price_stats_by_source(db: Session) -> dict:
-        """Get price statistics by source"""
-        from sqlalchemy import func
-
-        results = db.query(
-            Product.source,
-            func.count(Product.id).label("count"),
-            func.avg(Product.current_price).label("avg_price"),
-            func.min(Product.current_price).label("min_price"),
-            func.max(Product.current_price).label("max_price")
-        ).group_by(Product.source).all()
-
-        return {
-            row.source.value: {
-                "count": row.count,
-                "average": row.avg_price,
-                "min": row.min_price,
-                "max": row.max_price
-            }
-            for row in results
-        }
-
-
-class SyncService:
-    """Handle data fetching and syncing from marketplaces"""
-
-    @staticmethod
-    async def fetch_price_data(user_id: int, db: Session) -> dict:
-        """
-        Simulate fetching price data from marketplaces
-        In production, this would call actual marketplace APIs
-        """
-        logger.info(f"Syncing price data for user {user_id}")
-
-        # This would connect to marketplace APIs
-        # For now, return a summary
-        products_updated = 0
-        price_changes_detected = 0
-
-        return {
-            "products_updated": products_updated,
-            "price_changes_detected": price_changes_detected,
-            "timestamp": datetime.utcnow()
         }

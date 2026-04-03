@@ -3,163 +3,283 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Price Monitoring System</title>
+    <title>PriceMonitor — Advanced Competitor Tracking</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;400;600;800&display=swap" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar">
+    <!-- Navbar -->
+    <nav class="navbar hidden" id="mainNavbar">
         <div class="container">
-            <div class="logo">💰 Price Monitor</div>
+            <div class="logo">Price<span>Monitor</span></div>
             <ul class="nav-menu">
-                <li><a href="#dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="#dashboard" class="nav-link active">Dashboard</a></li>
                 <li><a href="#products" class="nav-link">Products</a></li>
                 <li><a href="#analytics" class="nav-link">Analytics</a></li>
+                <li class="nav-auth">
+                    <div id="userProfile" class="user-profile">
+                        <span id="userEmail"></span>
+                        <button id="logoutBtn" class="btn btn-sm btn-outline">Logout</button>
+                    </div>
+                </li>
             </ul>
         </div>
     </nav>
 
-    <main class="container">
-        <!-- Dashboard Section -->
-        <section id="dashboard" class="section">
-            <h1>Dashboard</h1>
+    <!-- Landing Hero -->
+    <section id="landingHero" class="landing-hero active-section">
+        <div class="hero-content">
+            <div class="hero-badge">UltraThink Data Intelligence</div>
+            <h1 id="typewriterHeading"></h1>
+            <p>High-precision tracking for high-end marketplaces. Monitor competitors at scale with the world's most advanced pricing engine.</p>
+            <div class="hero-actions">
+                <button id="startBtn" class="btn btn-primary btn-lg">Access Platform</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="container hidden" id="mainAppContent" style="padding-top: 3rem;">
+        
+        <!-- Dashboard Overview -->
+        <section id="dashboard" class="section active-section">
+            <div class="section-header">
+                <div>
+                    <h1>Marketplace Health</h1>
+                    <p class="section-subtitle">Real-time aggregate data across your verified sources.</p>
+                </div>
+                <button id="refreshDataBtn" class="btn btn-primary">Sync All Data</button>
+            </div>
+
             <div class="stats-grid">
                 <div class="stat-card">
+                    <div class="stat-label">Inventory Tracked</div>
                     <div class="stat-value" id="totalProducts">0</div>
-                    <div class="stat-label">Total Products</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-label">Marketplaces</div>
                     <div class="stat-value" id="totalSources">0</div>
-                    <div class="stat-label">Data Sources</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-label">Price Fluctuations</div>
                     <div class="stat-value" id="priceChanges">0</div>
-                    <div class="stat-label">Price Changes Today</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-label">Portfolio Value</div>
                     <div class="stat-value" id="avgPrice">$0</div>
-                    <div class="stat-label">Avg Price</div>
                 </div>
             </div>
 
-            <div class="chart-container">
-                <h2>Products by Source</h2>
-                <div id="sourceChart" class="bar-chart"></div>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3 class="chart-title">Source Distribution</h3>
+                    <div id="sourceChart" class="bar-chart"></div>
+                </div>
+                <div class="chart-container">
+                    <h3 class="chart-title">Liquidity Per Category</h3>
+                    <div id="categoryChart" class="chart"></div>
+                </div>
             </div>
-
-            <div class="chart-container">
-                <h2>Average Price by Category</h2>
-                <div id="categoryChart" class="chart"></div>
-            </div>
-
-            <button id="refreshDataBtn" class="btn btn-primary action-btn">Refresh All Data</button>
         </section>
 
-        <!-- Products Section -->
+        <!-- Products Management -->
         <section id="products" class="section">
-            <h1>Products</h1>
-
-            <!-- Filters -->
-            <div class="filter-panel">
-                <input type="text" id="searchInput" placeholder="Search products..." class="filter-input">
-
-                <select id="sourceFilter" class="filter-input">
-                    <option value="">All Sources</option>
-                    <option value="grailed">Grailed</option>
-                    <option value="fashionphile">Fashionphile</option>
-                    <option value="1stdibs">1stDibs</option>
-                </select>
-
-                <select id="categoryFilter" class="filter-input">
-                    <option value="">All Categories</option>
-                </select>
-
-                <div class="price-filter">
-                    <input type="number" id="minPrice" placeholder="Min Price" class="filter-input" min="0">
-                    <input type="number" id="maxPrice" placeholder="Max Price" class="filter-input" min="0">
+            <div class="section-header">
+                <div>
+                    <h1>Inventory Management</h1>
+                    <p class="section-subtitle">Fine-tune your monitoring scope and parameters.</p>
                 </div>
-
-                <button id="filterBtn" class="btn btn-primary">Apply Filters</button>
-                <button id="resetBtn" class="btn btn-secondary">Reset</button>
+                <button id="openAddProductBtn" class="btn btn-primary">+ Add New Product</button>
             </div>
 
-            <!-- Add Product Form -->
-            <div class="add-product-panel">
-                <h3>Add New Product</h3>
-                <form id="addProductForm">
-                    <input type="text" id="productName" placeholder="Product Name" required>
-                    <input type="text" id="productId" placeholder="External ID" required>
-
-                    <select id="productSource" required>
-                        <option value="">Select Source</option>
+            <!-- Enhanced Filters -->
+            <div class="filter-panel">
+                <div class="filter-group main-search">
+                    <div class="search-wrapper">
+                        <input type="text" id="searchInput" placeholder="Search by name or serial ID..." class="filter-input">
+                    </div>
+                </div>
+                <div class="filter-row">
+                    <select id="sourceFilter" class="filter-input">
+                        <option value="">All Origins</option>
                         <option value="grailed">Grailed</option>
                         <option value="fashionphile">Fashionphile</option>
                         <option value="1stdibs">1stDibs</option>
                     </select>
-
-                    <input type="text" id="productCategory" placeholder="Category">
-                    <input type="number" id="productPrice" placeholder="Price" step="0.01" required>
-                    <input type="url" id="productUrl" placeholder="Product URL">
-                    <textarea id="productDescription" placeholder="Description" rows="3"></textarea>
-
-                    <button type="submit" class="btn btn-primary">Add Product</button>
-                </form>
+                    <select id="categoryFilter" class="filter-input">
+                        <option value="">All Segments</option>
+                    </select>
+                    <div class="price-range">
+                        <input type="number" id="minPrice" placeholder="Min" class="filter-input">
+                        <span class="range-sep">to</span>
+                        <input type="number" id="maxPrice" placeholder="Max" class="filter-input">
+                    </div>
+                    <div class="filter-actions">
+                        <button id="filterBtn" class="btn btn-outline">Apply</button>
+                        <button id="resetBtn" class="btn btn-outline">Reset</button>
+                    </div>
+                </div>
             </div>
 
-            <!-- Products Table -->
-            <div class="products-container">
-                <table class="products-table">
+            <!-- Data Table -->
+            <div class="products-container card-shadow">
+                <table>
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Source</th>
-                            <th>Category</th>
-                            <th>Current Price</th>
-                            <th>Last Updated</th>
-                            <th>Actions</th>
+                            <th>Product Name</th>
+                            <th>Marketplace</th>
+                            <th>Segment</th>
+                            <th>Entry Price</th>
+                            <th>Sync Date</th>
+                            <th class="text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="productsList">
-                        <tr><td colspan="6" class="text-center">No products yet</td></tr>
+                        <tr><td colspan="6" class="text-center empty-state">No listings synced.</td></tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Pagination -->
-            <div class="pagination" id="pagination">
-                <button id="prevBtn" class="btn btn-secondary" disabled>← Previous</button>
-                <span id="pageInfo">Page 1</span>
-                <button id="nextBtn" class="btn btn-secondary">Next →</button>
+            <!-- Paging -->
+            <div class="pagination">
+                <div class="page-meta" id="pageInfo">Page 1</div>
+                <div class="page-actions">
+                    <button id="prevBtn" class="btn btn-outline btn-sm" disabled>Previous</button>
+                    <button id="nextBtn" class="btn btn-outline btn-sm">Next</button>
+                </div>
             </div>
         </section>
 
-        <!-- Analytics Section -->
+        <!-- Analytics Deep-Dive -->
         <section id="analytics" class="section">
-            <h1>Analytics</h1>
-            <div class="analytics-grid">
-                <div class="analytics-card">
-                    <h3>Price Statistics by Source</h3>
+            <div class="section-header">
+                <div>
+                    <h1>Strategic Analytics</h1>
+                    <p class="section-subtitle">Deep intelligence derived from multi-channel scraping.</p>
+                </div>
+            </div>
+            <div class="analytics-layout">
+                <div class="stat-card dark">
+                    <h3 class="card-heading">Global Market Share</h3>
                     <div id="sourceStats"></div>
                 </div>
-                <div class="analytics-card">
-                    <h3>Price Statistics by Category</h3>
+                <div class="stat-card dark">
+                    <h3 class="card-heading">Category Performance</h3>
                     <div id="categoryStats"></div>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- Product Detail Modal -->
-    <div id="detailModal" class="modal">
-        <div class="modal-content large">
+    <!-- Modals -->
+
+    <!-- Auth - Refined UltraThink Version -->
+    <div id="authModal" class="modal">
+        <div class="modal-content auth-brutalist">
+            <span class="close" id="closeAuth">&times;</span>
+            <div class="auth-box">
+                <div class="auth-header-minimal">
+                    <div class="auth-logo">Price<span>Monitor</span></div>
+                    <div class="auth-tag">Platform Identity Terminal</div>
+                </div>
+                
+                <div class="auth-tabs-minimal">
+                    <button class="active" id="loginTab">Access System</button>
+                    <button id="registerTab">Create Identity</button>
+                </div>
+                
+                <div id="loginFormContainer" class="auth-form-wrap">
+                    <form id="loginForm">
+                        <div class="auth-field-stack">
+                            <input type="email" id="loginEmail" required placeholder="Corporation Email Address">
+                            <input type="password" id="loginPassword" required placeholder="Access Key Code">
+                        </div>
+                        <button type="submit" class="btn btn-primary auth-submit">Verify Identity</button>
+                    </form>
+                </div>
+                
+                <div id="registerFormContainer" class="auth-form-wrap hidden">
+                    <form id="registerForm">
+                        <div class="auth-field-stack">
+                            <input type="email" id="regEmail" required placeholder="Institutional Email">
+                            <input type="password" id="regPassword" required placeholder="New Security Key">
+                        </div>
+                        <button type="submit" class="btn btn-primary auth-submit">Initialize Profile</button>
+                    </form>
+                </div>
+                <div id="authError" class="auth-alert hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div id="addProductModal" class="modal">
+        <div class="modal-content large-wide">
             <span class="close">&times;</span>
-            <h2 id="detailTitle"></h2>
+            <div class="modal-header">
+                <h2>Sync New Listing</h2>
+                <p>Register a specific product ID to begin monitoring price fluctuations.</p>
+            </div>
+            <form id="addProductForm">
+                <div class="form-grid-three">
+                    <div class="field-item">
+                        <label>Display Name</label>
+                        <input type="text" id="productName" placeholder="e.g. Rolex Submariner" required>
+                    </div>
+                    <div class="field-item">
+                        <label>External ID</label>
+                        <input type="text" id="productId" placeholder="Marketplace identifier" required>
+                    </div>
+                    <div class="field-item">
+                        <label>Marketplace Source</label>
+                        <select id="productSource" required>
+                            <option value="">Origin Source</option>
+                            <option value="grailed">Grailed</option>
+                            <option value="fashionphile">Fashionphile</option>
+                            <option value="1stdibs">1stDibs</option>
+                        </select>
+                    </div>
+                    <div class="field-item">
+                        <label>Industry Segment</label>
+                        <input type="text" id="productCategory" placeholder="e.g. Watches">
+                    </div>
+                    <div class="field-item">
+                        <label>Current Value (USD)</label>
+                        <input type="number" id="productPrice" placeholder="0.00" step="0.01" required>
+                    </div>
+                    <div class="field-item">
+                        <label>Market Link</label>
+                        <input type="url" id="productUrl" placeholder="Original product direct URL">
+                    </div>
+                    <div class="field-item full-row">
+                        <label>Strategic Description</label>
+                        <textarea id="productDescription" placeholder="Optional internal notes..." rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="UI.hideModal('addProductModal')">Cancel Request</button>
+                    <button type="submit" class="btn btn-primary">Initiate Fetch</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Product Details Modal -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content ultra-wide">
+            <span class="close">&times;</span>
+            <div id="detailHeader" class="modal-header">
+                <h2 id="detailTitle"></h2>
+            </div>
             <div id="detailContent"></div>
         </div>
     </div>
 
-    <!-- Loading Spinner -->
-    <div id="loadingSpinner" class="spinner hidden">
-        <div class="spinner-ring"></div>
+    <!-- Spinner -->
+    <div id="loadingSpinner" class="ui-spinner hidden">
+        <div class="ring-loader"></div>
     </div>
 
     <script src="js/api.js"></script>

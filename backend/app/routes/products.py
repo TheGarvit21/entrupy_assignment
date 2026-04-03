@@ -1,7 +1,7 @@
 """
 Product routes
 """
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional, List
@@ -14,7 +14,7 @@ from app.schemas import (
     PaginatedResponse,
     AggregateStats
 )
-from app.services.notifications import PriceHistoryService, NotificationService
+from app.services.notifications import PriceHistoryService, NotificationService, WebhookDeliveryService
 from datetime import datetime
 
 router = APIRouter(prefix="/api/products", tags=["products"])
@@ -190,11 +190,12 @@ def delete_product(
 
 
 @router.post("/{product_id}/refresh")
-def refresh_product(
+async def refresh_product(
     product_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
-    """Trigger a price refresh for a product (simulate API call)"""
+    """Trigger a price refresh for a product (utilize real/mock scraper)"""
     product = db.query(Product).filter(Product.id == product_id).first()
 
     if not product:
@@ -203,12 +204,56 @@ def refresh_product(
             detail="Product not found"
         )
 
+    from app.services.scrapers import ScraperManager
+    manager = ScraperManager()
+    
+    # Fetch data using scraper (async)
+    source_name = product.source.value if hasattr(product.source, "value") else str(product.source)
+    scraped_data = await manager.refresh_product(source_name, product.external_id)
+    
+    if not scraped_data:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Failed to refresh product from source"
+        )
+
+    new_price = scraped_data.get("current_price")
+    old_price = product.current_price
+    
+    if new_price is not None and new_price != old_price:
+        # Detect and record price change
+        event = NotificationService.detect_price_change(
+            db,
+            product_id,
+            new_price,
+            old_price
+        )
+        
+        # Dispatch notifications in background
+        if event:
+            background_tasks.add_task(WebhookDeliveryService.deliver_price_change, db, event.id)
+        
+        # Update current product price
+        product.current_price = new_price
+        
+        # Record into price history
+        price_history = PriceHistory(
+            product_id=product_id,
+            price=new_price,
+            currency=product.currency
+        )
+        db.add(price_history)
+
     product.last_fetched = datetime.utcnow()
+    product.updated_at = datetime.utcnow()
     db.commit()
+    db.refresh(product)
 
     return {
-        "message": "Product refresh triggered",
+        "message": "Product refresh successful",
         "product_id": product_id,
+        "old_price": old_price,
+        "new_price": product.current_price,
         "last_fetched": product.last_fetched
     }
 

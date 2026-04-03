@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 from app.database import get_db, init_db
 from app.models import RequestLog
-from app.routes import products
+from app.routes import products, auth
 
 # Load environment variables
 load_dotenv()
@@ -37,7 +37,13 @@ cors_origins_str = os.getenv("CORS_ORIGINS", '["http://localhost:3000", "http://
 try:
     cors_origins = json.loads(cors_origins_str)
 except json.JSONDecodeError:
-    cors_origins = ["http://localhost:3000","http://127.0.0.1:5500/", "http://localhost:8000"]
+    cors_origins = [
+        "http://localhost:3000",
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000"
+    ]
 
 # Add CORS middleware
 app.add_middleware(
@@ -65,6 +71,7 @@ async def log_requests(request: Request, call_next):
 
 # Include routers
 app.include_router(products.router)
+app.include_router(auth.router)
 
 
 @app.on_event("startup")

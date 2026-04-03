@@ -2,7 +2,9 @@
  * API Communication Module
  */
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = window.location.hostname === '127.0.0.1' 
+    ? 'http://127.0.0.1:8000/api' 
+    : 'http://localhost:8000/api';
 
 class API {
     /**
@@ -17,7 +19,8 @@ class API {
 
         const config = {
             ...options,
-            headers
+            headers,
+            credentials: 'include' // Always include credentials for cookie-based auth
         };
 
         try {
@@ -33,6 +36,35 @@ class API {
             console.error(`API Error: ${endpoint}`, error);
             throw error;
         }
+    }
+
+    /**
+     * Authentication endpoints
+     */
+    static async login(email, password) {
+        return this.request('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password })
+        });
+    }
+
+    static async register(email, password) {
+        return this.request('/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({ email, password })
+        });
+    }
+
+    static async logout() {
+        return this.request('/auth/logout', {
+            method: 'POST'
+        });
+    }
+
+    static async getMe() {
+        return this.request('/auth/me', {
+            method: 'GET'
+        });
     }
 
     /**

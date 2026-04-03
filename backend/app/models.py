@@ -13,6 +13,20 @@ class Source(str, enum.Enum):
     ONESD_IBS = "1stdibs"
 
 
+class User(Base):
+    __tablename__ = "users"
+    __table_args__ = (
+        Index("idx_email", "email", unique=True),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, nullable=False, unique=True)
+    hashed_password = Column(String, nullable=False)
+    api_key = Column(String, unique=True, index=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Product(Base):
     __tablename__ = "products"
     __table_args__ = (
@@ -86,6 +100,17 @@ class PriceChangeEvent(Base):
     product = relationship("Product", back_populates="change_events")
 
 
+class Webhook(Base):
+    __tablename__ = "webhooks"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    target_url = Column(String, nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+
 class RequestLog(Base):
     __tablename__ = "request_logs"
     __table_args__ = (
@@ -93,7 +118,10 @@ class RequestLog(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     endpoint = Column(String)
     method = Column(String)
     status_code = Column(Integer)
     requested_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    user = relationship("User")
