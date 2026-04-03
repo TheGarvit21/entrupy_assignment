@@ -107,15 +107,20 @@ class PriceHistoryService:
     """Handle price history queries and analytics"""
 
     @staticmethod
-    def get_average_price_by_category(db: Session) -> dict:
-        """Get average price by category"""
+    def get_average_price_by_category(db: Session, user_id: Optional[int] = None) -> dict:
+        """Get average price by category, optionally filtered by user"""
         from sqlalchemy import func
 
-        results = db.query(
+        query = db.query(
             Product.category,
             func.avg(Product.current_price).label("avg_price"),
             func.count(Product.id).label("count")
-        ).group_by(Product.category).all()
+        )
+
+        if user_id is not None:
+            query = query.filter(Product.user_id == user_id)
+
+        results = query.group_by(Product.category).all()
 
         return {
             row.category: {

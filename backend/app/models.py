@@ -30,12 +30,14 @@ class User(Base):
 class Product(Base):
     __tablename__ = "products"
     __table_args__ = (
-        Index("idx_source_external_id", "source", "external_id", unique=True),
+        Index("idx_source_external_id", "source", "external_id"),
         Index("idx_category", "category"),
         Index("idx_price", "current_price"),
+        Index("idx_user_id", "user_id"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # owner
     external_id = Column(String, nullable=False)
     source = Column(SQLEnum(Source), nullable=False)
     name = Column(String, nullable=False)
@@ -48,6 +50,7 @@ class Product(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_fetched = Column(DateTime)
 
+    owner = relationship("User", backref="products")
     price_history = relationship("PriceHistory", back_populates="product", cascade="all, delete-orphan")
     price_alerts = relationship("PriceAlert", back_populates="product", cascade="all, delete-orphan")
     change_events = relationship("PriceChangeEvent", back_populates="product", cascade="all, delete-orphan")

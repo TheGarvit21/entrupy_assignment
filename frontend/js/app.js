@@ -143,26 +143,40 @@ class App {
     }
 
     /**
-     * Sign-up logic
+     * Sign-up logic — registers then redirects to login
      */
     async register() {
         const email = document.getElementById('regEmail').value;
         const password = document.getElementById('regPassword').value;
-        const err = document.getElementById('authError');
+        const errBox = document.getElementById('authError');
 
         try {
             UI.showLoading();
             await API.register(email, password);
-            await API.login(email, password);
-            this.user = await API.getMe();
-            UI.updateAuthUI(this.user);
-            UI.hideModal('authModal');
-            UI.toast('Account verified. Monitoring setup.', 'success');
-            this.loadProducts();
+
+            // Redirect to login view with success hint
+            this.switchAuthView('login');
+
+            // Pre-fill email for convenience
+            const loginEmailField = document.getElementById('loginEmail');
+            if (loginEmailField) loginEmailField.value = email;
+
+            // Show success message
+            if (errBox) {
+                errBox.textContent = '✓ Account created! Sign in to continue.';
+                errBox.style.background = 'rgba(16, 185, 129, 0.08)';
+                errBox.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+                errBox.style.color = '#10b981';
+                errBox.classList.remove('hidden');
+            }
         } catch (e) {
-            const errBox = document.getElementById('authError');
-            errBox.textContent = e.message;
-            errBox.classList.remove('hidden');
+            if (errBox) {
+                errBox.textContent = e.message;
+                errBox.style.background = '';
+                errBox.style.borderColor = '';
+                errBox.style.color = '';
+                errBox.classList.remove('hidden');
+            }
         } finally {
             UI.hideLoading();
         }
