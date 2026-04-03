@@ -32,32 +32,70 @@ class UI {
     }
 
     /**
-     * Typewriter effect for Hero heading
+     * Multi-phrase cycling typewriter effect for Hero heading
      */
     static initTypewriter() {
-        const text = "Benchmark Prices \nWith Absolute Clarity.";
-        const target = document.getElementById('typewriterHeading');
-        if (!target) return;
-        
-        target.innerHTML = '';
-        let i = 0;
-        
-        function type() {
-            if (i < text.length) {
-                const char = text.charAt(i);
-                if (char === '\n') {
-                    target.innerHTML += '<br>';
-                } else if (char === 'C' && text.substring(i, i+7) === 'Clarity') {
-                    target.innerHTML += `<span>Clarity</span>`;
-                    i += 7;
-                } else {
-                    target.innerHTML += char;
+        const phrases = [
+            { text: "Track Prices.", highlight: false },
+            { text: "Beat Competitors.", highlight: false },
+            { text: "Move Faster.", highlight: false },
+            { text: "Know the Market.", highlight: false },
+        ];
+
+        const el = document.getElementById('typewriterHeading');
+        if (!el) return;
+
+        // Keep cursor element
+        let cursor = el.querySelector('.typewriter-cursor');
+        if (!cursor) {
+            cursor = document.createElement('span');
+            cursor.className = 'typewriter-cursor';
+            el.appendChild(cursor);
+        }
+
+        let phraseIdx = 0;
+        let charIdx = 0;
+        let deleting = false;
+        let timeout;
+
+        function tick() {
+            const phrase = phrases[phraseIdx].text;
+
+            if (!deleting) {
+                // Typing
+                charIdx++;
+                el.textContent = phrase.substring(0, charIdx);
+                el.appendChild(cursor);
+
+                if (charIdx === phrase.length) {
+                    // Pause at end, then delete
+                    timeout = setTimeout(() => { deleting = true; tick(); }, 1800);
+                    return;
                 }
-                i++;
-                setTimeout(type, 50);
+                timeout = setTimeout(tick, 75);
+            } else {
+                // Deleting
+                charIdx--;
+                el.textContent = phrase.substring(0, charIdx);
+                el.appendChild(cursor);
+
+                if (charIdx === 0) {
+                    deleting = false;
+                    phraseIdx = (phraseIdx + 1) % phrases.length;
+                    timeout = setTimeout(tick, 400);
+                    return;
+                }
+                timeout = setTimeout(tick, 35);
             }
         }
-        type();
+
+        clearTimeout(timeout);
+        charIdx = 0;
+        deleting = false;
+        phraseIdx = 0;
+        el.textContent = '';
+        el.appendChild(cursor);
+        setTimeout(tick, 600);
     }
 
     static updateAuthUI(user) {
@@ -250,19 +288,23 @@ class UI {
         const srcContainer = document.getElementById('sourceStats');
         const catContainer = document.getElementById('categoryStats');
         
-        srcContainer.innerHTML = Object.entries(s.products_by_source || {}).map(([name, count]) => `
-            <div style="display: flex; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid #111;">
-                <span style="color: var(--text-mid); font-weight: 600;">${name}</span>
-                <span style="color: white; font-weight: 800;">${count} Assets</span>
-            </div>
-        `).join('');
+        if (srcContainer) {
+            srcContainer.innerHTML = Object.entries(s.products_by_source || {}).map(([name, count]) => `
+                <div class="analytics-row">
+                    <span class="analytics-row-label">${name}</span>
+                    <span class="analytics-row-value">${count} assets</span>
+                </div>
+            `).join('') || '<p style="color:var(--text-dim);font-size:0.85rem;">No data yet.</p>';
+        }
 
-        catContainer.innerHTML = Object.entries(s.avg_price_by_category || {}).map(([name, data]) => `
-            <div style="display: flex; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid #111;">
-                <span style="color: var(--text-mid); font-weight: 600;">${name || 'Other Segments'}</span>
-                <span style="color: var(--primary); font-weight: 800;">$${data.average.toFixed(0)} Avg</span>
-            </div>
-        `).join('');
+        if (catContainer) {
+            catContainer.innerHTML = Object.entries(s.avg_price_by_category || {}).map(([name, data]) => `
+                <div class="analytics-row">
+                    <span class="analytics-row-label">${name || 'Other'}</span>
+                    <span class="analytics-row-value accent">$${data.average.toFixed(0)} avg</span>
+                </div>
+            `).join('') || '<p style="color:var(--text-dim);font-size:0.85rem;">No data yet.</p>';
+        }
     }
 
     static updatePagination(total, page, size) {
