@@ -175,44 +175,82 @@
 
     <!-- Modals -->
 
-    <!-- Auth - Refined UltraThink Version -->
+
+    <!-- Auth Modal — Redesigned from Scratch -->
     <div id="authModal" class="modal">
-        <div class="modal-content auth-brutalist">
-            <span class="close" id="closeAuth">&times;</span>
-            <div class="auth-box">
-                <div class="auth-header-minimal">
-                    <div class="auth-logo">Price<span>Monitor</span></div>
-                    <div class="auth-tag">Platform Identity Terminal</div>
+        <div class="auth-modal-shell">
+
+            <!-- Left Panel — Branding -->
+            <div class="auth-left-panel">
+                <div class="auth-brand">
+                    <div class="auth-brand-logo">Price<span>Monitor</span></div>
+                    <p class="auth-brand-tagline">The intelligence layer for luxury resale markets.</p>
                 </div>
-                
-                <div class="auth-tabs-minimal">
-                    <button class="active" id="loginTab">Access System</button>
-                    <button id="registerTab">Create Identity</button>
+                <div class="auth-features">
+                    <div class="auth-feature-item">
+                        <div class="auth-feature-dot"></div>
+                        <span>Live price tracking across Grailed, Fashionphile & 1stDibs</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <div class="auth-feature-dot"></div>
+                        <span>Instant webhook alerts on price movements</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <div class="auth-feature-dot"></div>
+                        <span>Historical trend analysis per SKU</span>
+                    </div>
                 </div>
-                
-                <div id="loginFormContainer" class="auth-form-wrap">
-                    <form id="loginForm">
-                        <div class="auth-field-stack">
-                            <input type="email" id="loginEmail" required placeholder="Corporation Email Address">
-                            <input type="password" id="loginPassword" required placeholder="Access Key Code">
-                        </div>
-                        <button type="submit" class="btn btn-primary auth-submit">Verify Identity</button>
-                    </form>
-                </div>
-                
-                <div id="registerFormContainer" class="auth-form-wrap hidden">
-                    <form id="registerForm">
-                        <div class="auth-field-stack">
-                            <input type="email" id="regEmail" required placeholder="Institutional Email">
-                            <input type="password" id="regPassword" required placeholder="New Security Key">
-                        </div>
-                        <button type="submit" class="btn btn-primary auth-submit">Initialize Profile</button>
-                    </form>
-                </div>
-                <div id="authError" class="auth-alert hidden"></div>
+                <div class="auth-panel-footer">Entrupy Engineering — Intern Assignment</div>
             </div>
+
+            <!-- Right Panel — Forms -->
+            <div class="auth-right-panel">
+                <button class="auth-close-btn" id="closeAuth">&times;</button>
+
+                <div id="loginView">
+                    <div class="auth-form-header">
+                        <h2>Welcome back</h2>
+                        <p>Sign in to your monitoring dashboard</p>
+                    </div>
+                    <form id="loginForm" class="auth-form">
+                        <div class="auth-input-group">
+                            <label>Email Address</label>
+                            <input type="email" id="loginEmail" placeholder="you@company.com" required autocomplete="email">
+                        </div>
+                        <div class="auth-input-group">
+                            <label>Password</label>
+                            <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
+                        </div>
+                        <button type="submit" class="auth-btn-submit">Sign In</button>
+                        <p class="auth-switch-txt">Don't have an account? <a href="#" id="goToRegister">Create one</a></p>
+                    </form>
+                </div>
+
+                <div id="registerView" class="hidden">
+                    <div class="auth-form-header">
+                        <h2>Create account</h2>
+                        <p>Set up access to start monitoring prices</p>
+                    </div>
+                    <form id="registerForm" class="auth-form">
+                        <div class="auth-input-group">
+                            <label>Email Address</label>
+                            <input type="email" id="regEmail" placeholder="you@company.com" required autocomplete="email">
+                        </div>
+                        <div class="auth-input-group">
+                            <label>Password</label>
+                            <input type="password" id="regPassword" placeholder="Create a strong password" required autocomplete="new-password">
+                        </div>
+                        <button type="submit" class="auth-btn-submit">Create Account</button>
+                        <p class="auth-switch-txt">Already have an account? <a href="#" id="goToLogin">Sign in</a></p>
+                    </form>
+                </div>
+
+                <div id="authError" class="auth-error-box hidden"></div>
+            </div>
+
         </div>
     </div>
+
 
     <!-- Add Product Modal -->
     <div id="addProductModal" class="modal">

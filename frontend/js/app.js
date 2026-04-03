@@ -43,7 +43,11 @@ class App {
      * Setup event listeners
      */
     setupEventListeners() {
-        // Modal Event Handlers
+        // Close modal buttons
+        document.getElementById('closeAuth')?.addEventListener('click', () => {
+            UI.hideModal('authModal');
+        });
+
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
                 UI.hideModal(e.target.id);
@@ -74,11 +78,17 @@ class App {
             this.logout();
         });
 
-        // Auth Tabs
-        document.getElementById('loginTab')?.addEventListener('click', () => this.switchAuthTab('login'));
-        document.getElementById('registerTab')?.addEventListener('click', () => this.switchAuthTab('register'));
+        // Auth view switching via inline links
+        document.getElementById('goToRegister')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.switchAuthView('register');
+        });
+        document.getElementById('goToLogin')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.switchAuthView('login');
+        });
 
-        // Form persistence
+        // Form submissions
         document.getElementById('loginForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
             this.login();
@@ -124,8 +134,9 @@ class App {
             this.loadProducts();
             this.loadAnalytics();
         } catch (e) {
-            err.textContent = e.message;
-            err.classList.remove('hidden');
+            const errBox = document.getElementById('authError');
+            errBox.textContent = e.message;
+            errBox.classList.remove('hidden');
         } finally {
             UI.hideLoading();
         }
@@ -149,8 +160,9 @@ class App {
             UI.toast('Account verified. Monitoring setup.', 'success');
             this.loadProducts();
         } catch (e) {
-            err.textContent = e.message;
-            err.classList.remove('hidden');
+            const errBox = document.getElementById('authError');
+            errBox.textContent = e.message;
+            errBox.classList.remove('hidden');
         } finally {
             UI.hideLoading();
         }
@@ -171,20 +183,20 @@ class App {
     }
 
     /**
-     * Toggle modal view state
+     * Switch between login/register views in the two-panel modal
      */
-    switchAuthTab(tab) {
-        const lT = document.getElementById('loginTab');
-        const rT = document.getElementById('registerTab');
-        const lC = document.getElementById('loginFormContainer');
-        const rC = document.getElementById('registerFormContainer');
-        
-        if (tab === 'login') {
-            lT.classList.add('active'); rT.classList.remove('active');
-            lC.classList.remove('hidden'); rC.classList.add('hidden');
+    switchAuthView(view) {
+        const loginView = document.getElementById('loginView');
+        const registerView = document.getElementById('registerView');
+        const errBox = document.getElementById('authError');
+        if (errBox) errBox.classList.add('hidden');
+
+        if (view === 'login') {
+            loginView.classList.remove('hidden');
+            registerView.classList.add('hidden');
         } else {
-            lT.classList.remove('active'); rT.classList.add('active');
-            lC.classList.add('hidden'); rC.classList.remove('hidden');
+            loginView.classList.add('hidden');
+            registerView.classList.remove('hidden');
         }
     }
 
